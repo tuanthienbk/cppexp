@@ -49,6 +49,11 @@ public:
         m_tasks.push_and_notify([task]() { (*task)();}, [this](){ m_sem.release();});
         return ret;
     }
+
+    void enqueue(const std::function<void()>& f)
+    {
+        m_tasks.push_and_notify(f, [this](){ m_sem.release();});
+    }
 private:
     threadpool()
     {
