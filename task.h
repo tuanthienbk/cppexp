@@ -3,8 +3,9 @@
 #include <future>
 #include <type_traits>
 #include <coroutine>
+#include <concepts>
 
-template <typename T>
+template <std::movable T>
 struct future
 {
     struct promise_type
@@ -101,32 +102,121 @@ future<std::invoke_result_t<std::decay_t<F>, std::decay_t<Args>...>> task(launch
         co_return threadpool::instance()->schedule(f, args...);
 }
 
+template<typename T>
 struct async
 {
     struct promise_type
     {
-        async get_return_object() { return {}; }
+        std::coroutine_handle<> precursor;
+        T value;
+        std::exception_ptr exception = nullptr;
+
+        async get_return_object() 
+        {
+            return {std::coroutine_handle<promise_type>::from_promise(*this)};
+        }
         std::suspend_never initial_suspend() noexcept { return {}; }
-        std::suspend_never final_suspend() noexcept { return {}; }
-        void return_void() {}
-        void unhandled_exception() noexcept {}
+        auto final_suspend() noexcept 
+        { 
+            struct awaiter 
+            {
+                bool await_ready() noexcept { return false; }
+                void await_resume() noexcept {}
+                std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) noexcept
+                {
+                    auto precursor = h.promise().precursor;
+                    if (precursor)
+                        return precursor;
+                    else
+                        return std::noop_coroutine();
+                }
+            };
+            return awaiter{};
+        }
+        void return_value(T value) 
+        {
+            value = std::move(value);
+        }
+        void unhandled_exception() noexcept 
+        {
+            exception = std::current_exception();
+        }
+        void rethrow_unhandled_exception()
+        {
+            if (exception) std::rethrow_exception(std::move(exception));
+        }
         ~promise_type() { }
     };
+
+    std::coroutine_handle<promise_type> handle;
+
+    bool await_ready() noexcept { return handle.done(); }
+    T await_resume() noexcept 
+    {
+        handle.promise().rethrow_unhandled_exception();
+        return handle.promise().value;
+    }
+    void await_suspend(std::coroutine_handle<> h) noexcept
+    {
+        handle.promise().precursor = h;
+    }
 
     ~async() { }
 };
 
-#define UNIT_TEST
-
-#if defined(UNIT_TEST)
-
-async test1()
+template<>
+struct async<void>
 {
-    using namespace std::literals;
-    auto result  = co_await task([]() -> int 
-    { 
-        std::this_thread::sleep_for(100ms); 
-        return 1; 
-    });
-}
-#endif
+    struct promise_type
+    {
+        std::coroutine_handle<> precursor;
+        std::exception_ptr exception = nullptr;
+
+        async get_return_object() 
+        {
+            return {std::coroutine_handle<promise_type>::from_promise(*this)};
+        }
+        std::suspend_never initial_suspend() noexcept { return {}; }
+        auto final_suspend() noexcept 
+        { 
+            struct awaiter 
+            {
+                bool await_ready() noexcept { return false; }
+                void await_resume() noexcept {}
+                std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) noexcept
+                {
+                    auto precursor = h.promise().precursor;
+                    if (precursor)
+                        return precursor;
+                    else
+                        return std::noop_coroutine();
+                }
+            };
+            return awaiter{};
+        }
+        void return_void() { }
+        void unhandled_exception() noexcept 
+        {
+            exception = std::current_exception();
+        }
+        void rethrow_unhandled_exception()
+        {
+            if (exception) std::rethrow_exception(std::move(exception));
+        }
+        ~promise_type() { }
+    };
+
+    std::coroutine_handle<promise_type> handle;
+
+    bool await_ready() noexcept { return handle.done(); }
+    void await_resume() noexcept 
+    {
+        handle.promise().rethrow_unhandled_exception();
+    }
+    void await_suspend(std::coroutine_handle<> h) noexcept
+    {
+        handle.promise().precursor = h;
+    }
+
+    ~async() { }
+};

@@ -13,6 +13,8 @@ main.cpp
 queue_test.cpp
 threadpool_test.cpp
 task_test.cpp
+generator_test.cpp
+stream_test.cpp
 )
 
 set(HEADERS
@@ -20,6 +22,8 @@ lock.h
 concurrent_queue.h
 threadpool.h
 task.h
+generator.h
+stream.h
 )
 add_subdirectory(googletest)
 include_directories(SYSTEM googletest/include)
