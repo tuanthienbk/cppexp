@@ -27,7 +27,7 @@ struct future
         }
         void return_value(std::future<T> x)
         {
-            // std::cout << "return value" << std::endl;
+            std::cout << "return value" << std::endl;
             value = std::move(x);
         }
         void unhandled_exception() noexcept {}
@@ -45,20 +45,20 @@ struct future
 
         void await_suspend(std::coroutine_handle<> handle)
         {
-            // std::cout << "await_suspend" << std::endl;
+            std::cout << "await_suspend" << std::endl;
             m_future.coro.resume();
             handle.resume();
         }
 
         T await_resume()
         {
-            // std::cout << "await_resume" << std::endl;
+            std::cout << "await_resume" << std::endl;
             return m_future.coro.promise().value.get();
         }
 
         ~awaitable() 
         { 
-            // std::cout << "~AwaitableFuture" << std::endl;
+            std::cout << "~AwaitableFuture" << std::endl;
         }
     };
 
