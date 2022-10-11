@@ -19,9 +19,9 @@ TEST(generator, test2)
 {
     std::vector<int> v = {1, 2, 3, 4, 5};
     for (auto &i : range(10, 20) |
+                       views::take(3) |
                     //    std::views::filter([](int i){ return 0 == i % 2;}) |
-                       views::transform([](const int& i){ return i * i;}) |
-                       views::take(3)
+                       views::transform([](const int& i){ return i * i;})
         )
         std::cout << i << std::endl;
 }

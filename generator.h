@@ -153,20 +153,20 @@ class custom_take_view : public std::ranges::view_interface<custom_take_view<R>>
 
         reference operator*() const noexcept 
         { 
-            std::cout<< "custom take *" << std::endl;
+            // std::cout<< "custom take *" << std::endl;
             return *__current; 
         }
 
         Iter& operator++() noexcept
         {
-            std::cout<< "custom take ++()" << std::endl;
+            // std::cout<< "custom take ++()" << std::endl;
             ++__current;
             __index++;
             return *this;
         }
         Iter operator++(int) noexcept
         {
-            std::cout<< "custom take ++(int)" << std::endl;
+            // std::cout<< "custom take ++(int)" << std::endl;
             Iter temp = *this;
             ++__current;
             __index++;
@@ -174,7 +174,7 @@ class custom_take_view : public std::ranges::view_interface<custom_take_view<R>>
         }
         bool operator==(std::default_sentinel_t sentinel) const
         {
-            std::cout<< "custom take == sentinel" << std::endl;
+            // std::cout<< "custom take == sentinel" << std::endl;
             return (__current == sentinel) || (__index == __count);
         }
     };
@@ -267,19 +267,19 @@ class custom_transform_view : public std::ranges::view_interface<custom_transfor
 
         reference operator*() const noexcept 
         { 
-            std::cout<< "custom transform *" << std::endl;
+            // std::cout<< "custom transform *" << std::endl;
             return __value;
         }
         Iter& operator++() noexcept
         {
-            std::cout<< "custom transform ++()" << std::endl;
+            // std::cout<< "custom transform ++()" << std::endl;
             ++__current;
             __value = std::invoke(__func,*__current);
             return *this;
         }
         Iter operator++(int) noexcept
         {
-            std::cout<< "custom transform ++(int)" << std::endl;
+            // std::cout<< "custom transform ++(int)" << std::endl;
             Iter temp = *this;
             ++__current;
             __value = std::invoke(__func,*__current);
@@ -287,7 +287,7 @@ class custom_transform_view : public std::ranges::view_interface<custom_transfor
         }
         bool operator==(std::default_sentinel_t sentinel) const
         {
-            std::cout<< "custom transform ==" << std::endl;
+            // std::cout<< "custom transform ==" << std::endl;
             return __current == sentinel;
         }
     };
