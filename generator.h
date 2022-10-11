@@ -93,11 +93,21 @@ public:
     class Iter
     {
     public:
-        void operator++()
+        typedef  T value_type;
+        typedef  std::ptrdiff_t difference_type;
+
+        Iter& operator++() noexcept
         {
             m_coroutine.resume();
+            return *this;
         }
-        const T &operator*() const
+        Iter operator++(int) noexcept 
+        {
+            Iter temp = *this;
+            m_coroutine.resume();
+            return temp;
+        }
+        const T &operator*() const noexcept
         {
             m_coroutine.promise().rethrow_unhandled_exception();
             return m_coroutine.promise().current_value;
