@@ -345,3 +345,110 @@ namespace views
 {
     static details::custom_transform_range_adaptor transform;
 }
+
+template <std::ranges::input_range R, typename Pred> 
+requires std::predicate<Pred, const typename std::ranges::iterator_t<R>::value_type&>
+class custom_filter_view : public std::ranges::view_interface<custom_filter_view<R, Pred>>
+{
+    struct Iter
+    {
+        typedef typename std::ranges::iterator_t<R>::value_type value_type;
+        typedef std::ptrdiff_t difference_type;
+        typedef const value_type &reference;
+        typedef const value_type *pointer;
+        typedef std::input_iterator_tag iterator_category;
+
+        std::ranges::iterator_t<R> __current;
+        Pred __func;
+
+        Iter(const std::ranges::iterator_t<R> &_begin, Pred f) 
+        : __current(_begin), 
+        __func(std::move(f))
+        {}
+
+        reference operator*() const noexcept 
+        { 
+            // std::cout<< "custom transform *" << std::endl;
+            return *__current;
+        }
+        Iter& operator++() noexcept
+        {
+            // std::cout<< "custom transform ++()" << std::endl;
+            std::default_sentinel_t sentinel;
+            do
+            {
+                ++__current;
+            } while (!(__current == sentinel) && !std::invoke(__func,*__current));
+            return *this;
+        }
+        Iter operator++(int) noexcept
+        {
+            // std::cout<< "custom transform ++(int)" << std::endl;
+            Iter temp = *this;
+            std::default_sentinel_t sentinel;
+            do
+            {
+                ++__current;
+            } while (!(__current == sentinel) && !std::invoke(__func,*__current));
+            return temp;
+        }
+        bool operator==(std::default_sentinel_t sentinel) const
+        {
+            // std::cout<< "custom transform ==" << std::endl;
+            return __current == sentinel;
+        }
+    };
+
+private:
+    R base_;
+    Pred func_;
+public:
+    custom_filter_view() = default;
+
+    constexpr custom_filter_view(R base, Pred f)
+        : base_(std::move(base)), func_(std::move(f)) {}
+
+    constexpr auto begin() 
+    {
+        return Iter(std::begin(base_), func_);
+    }
+    constexpr auto end() 
+    {
+        return std::default_sentinel_t{};
+    }
+};
+
+namespace details
+{
+    template<typename Pred>
+    struct custom_filter_range_adaptor_closure
+    {
+        Pred __f;
+        explicit custom_filter_range_adaptor_closure(Pred f) : __f(std::move(f)) {}
+        template <std::ranges::input_range R>
+        constexpr auto operator()(R &&r) const
+        {
+            return custom_filter_view(std::forward<R>(r), __f);
+        }
+    };
+
+    struct custom_filter_range_adaptor
+    {
+        template<typename Pred>
+        constexpr auto operator()(Pred&& f) const
+        {
+            return custom_filter_range_adaptor_closure(std::move(f));
+        }
+    };
+
+    template <std::ranges::input_range R, typename Pred>
+    constexpr auto operator|(R &&r, custom_filter_range_adaptor_closure<Pred> const &a)
+    {
+        return a(std::forward<R>(r));
+    }
+}
+
+namespace views
+{
+    static details::custom_filter_range_adaptor filter;
+}
