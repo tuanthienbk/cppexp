@@ -9,3 +9,4 @@ Experiments on the latest C++ features. The code is copied and modified from var
 
 #### TODOS:
 * source.h: observable-observer that calls the subscribed callbacks whenver its content is modified
+* implement `when_any` and `when_all` for the task
