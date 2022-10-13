@@ -5,7 +5,8 @@
 TEST(source, test1)
 {
     source<int> s(0);
-    s.subscribe([](const int& i) { std::cout << i << std::endl;});
+    // s.subscribe([](const int& i) { std::cout << i << std::endl;});
+    s.bind([](const auto& i){ std::cout << std::get<0>(i) << std::endl;});
     s = 1;
     s = 2;
 }
