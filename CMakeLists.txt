@@ -17,6 +17,7 @@ threadpool_test.cpp
 task_test.cpp
 generator_test.cpp
 stream_test.cpp
+source_test.cpp
 )
 
 set(HEADERS
@@ -26,6 +27,8 @@ threadpool.h
 task.h
 generator.h
 stream.h
+observable.h
+source.h
 )
 add_subdirectory(googletest)
 include_directories(SYSTEM googletest/include)

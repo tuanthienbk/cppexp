@@ -86,10 +86,16 @@ public:
 template<std::movable T>
 struct async_stream : public stream_base<T>
 {
+    async_stream() {}
+    async_stream(const T& v) : value(v) {}
+
     virtual bool is_stopped() = 0;
 
     struct promise_value
     {
+        promise_value() {}
+        promise_value(const T& v) : value(v) {}
+
         T value;
         std::binary_semaphore sem{0};
         void set(T&& v)

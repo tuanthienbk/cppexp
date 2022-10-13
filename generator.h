@@ -1,4 +1,7 @@
 #pragma once
+
+#include "observable.h"
+
 #include <coroutine>
 #include <optional>
 #include <concepts>
@@ -7,7 +10,7 @@
 #include <iostream>
 
 template <std::movable T>
-class generator
+class generator : public range_observable<generator<T>>
 {
 public:
     struct promise_type
@@ -103,7 +106,8 @@ public:
         const T &operator*() const noexcept
         {
             m_coroutine.promise().rethrow_unhandled_exception();
-            return m_coroutine.promise().current_value;
+            const T& value = m_coroutine.promise().current_value;
+            return value;
         }
         bool operator==(std::default_sentinel_t) const
         {
@@ -135,7 +139,8 @@ private:
 };
 
 template <std::ranges::input_range R> // requires std::ranges::view<R>
-class custom_take_view : public std::ranges::view_interface<custom_take_view<R>>
+class custom_take_view : public std::ranges::view_interface<custom_take_view<R>>, 
+    public range_observable<custom_take_view<R>>
 {
     struct Iter
     {
@@ -154,6 +159,7 @@ class custom_take_view : public std::ranges::view_interface<custom_take_view<R>>
         reference operator*() const noexcept 
         { 
             // std::cout<< "custom take *" << std::endl;
+
             return *__current; 
         }
 
@@ -245,7 +251,8 @@ namespace views
 }
 
 template <std::ranges::input_range R, std::copy_constructible F> // requires std::ranges::view<R>
-class custom_transform_view : public std::ranges::view_interface<custom_transform_view<R, F>>
+class custom_transform_view : public std::ranges::view_interface<custom_transform_view<R, F>>,
+    public range_observable<custom_transform_view<R,F>>
 {
     struct Iter
     {
@@ -348,7 +355,8 @@ namespace views
 
 template <std::ranges::input_range R, typename Pred> 
 requires std::predicate<Pred, const typename std::ranges::iterator_t<R>::value_type&>
-class custom_filter_view : public std::ranges::view_interface<custom_filter_view<R, Pred>>
+class custom_filter_view : public std::ranges::view_interface<custom_filter_view<R, Pred>>,
+    public range_observable<custom_filter_view<R,Pred>>
 {
     struct Iter
     {
