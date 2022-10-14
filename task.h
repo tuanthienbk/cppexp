@@ -249,6 +249,19 @@ public:
     {
     }
 
+    single_consumer_event(single_consumer_event&& other) noexcept : m_awaiter{other.m_awaiter}, m_state(other.m_state.load(std::memory_order_relaxed))
+    {
+        other.m_awaiter = {};
+    }
+    single_consumer_event& operator=(single_consumer_event&& other)
+    {
+        m_state = other.m_state.load(std::memory_order_relaxed);
+        if (m_awaiter) m_awaiter.destroy();
+        m_awaiter = other.m_awaiter;
+        other.m_awaiter = {};
+        return *this;
+    }
+
     /// Query if this event has been set.
     bool is_set() const noexcept
     {
