@@ -7,6 +7,7 @@
 #include <functional>
 #include <iterator>
 #include <iostream>
+#include <latch>
 
 class threadpool
 {
@@ -75,7 +76,7 @@ private:
 private:
     std::vector<std::thread> m_workers;
     concurrent_queue<std::function<void()>> m_tasks;
-    std::counting_semaphore<32> m_sem{0};
+    std::binary_semaphore m_sem{0};
     bool m_stop{false};
 };
 
@@ -84,13 +85,21 @@ private:
 template <typename Iterator, typename Fun>
 void parallel_for(Iterator first, Iterator last, Fun f)
 {
-    std::vector<std::future<std::invoke_result_t<Fun, typename Iterator::value_type>>> futs;
-    futs.reserve(std::distance(first, last));
-    for (; first != last; ++first)
+    static const int RANGE_SIZE = 128;
+    std::latch work_done((std::distance(first, last) + RANGE_SIZE - 1)/RANGE_SIZE);
+    auto next = first;
+    for (;next != last;std::advance(first, RANGE_SIZE))
     {
-        futs.push_back(threadpool::instance()->schedule(f, *first));
+        if (std::distance(first, last) < RANGE_SIZE) next = last; else std::advance(next, RANGE_SIZE);
+        auto wrapf = [=, &work_done]() 
+        {
+            for(auto it = first;it != next;++it)
+                std::invoke(f, *it);
+            work_done.count_down();
+        };
+        threadpool::instance()->enqueue(wrapf);
     }
-    for(auto&& fut : futs) fut.get();
+    work_done.wait();
 }
 
 
